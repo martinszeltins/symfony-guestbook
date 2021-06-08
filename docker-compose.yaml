@@ -1,0 +1,62 @@
+version: '3.7'
+services:
+
+  # Nginx server
+  guestbook-nginx-server:
+    container_name: guestbook-nginx-server
+    image: nginx:1.19-alpine
+    restart: always
+    ports:
+      - 45193:80
+    volumes:
+      - ./app:/var/www
+      - ./docker/nginx-server/etc/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+    - guestbook-php-server
+    - guestbook-mysql-server
+    networks:
+      - app-network
+
+
+  # PHP server
+  guestbook-php-server:
+    build:
+      context: .        # (!) Dockerfile doesn't see anything outside of this context
+      dockerfile: ./docker/php-server/Dockerfile
+    container_name: guestbook-php-server
+    restart: always
+    tty: true
+    environment:
+      SERVICE_NAME: php
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./app:/var/www
+      - ./docker/php-server/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - /var/www/vendor       # We need this volume so that it won't be overwritten by our bind mount. Since vendor on the host is empty, the bind will map an empty directory to the container, overriding the new vendor directory and preventing our application from starting. The named vendor volume solves this problem by persisting the contents of the vendor directory and mounting it to the container, hiding the bind.
+    networks:
+      - app-network
+    depends_on:
+      - guestbook-mysql-server
+
+
+  # MySQL server
+  guestbook-mysql-server:
+    image: mysql:8.0
+    container_name: guestbook-mysql-server
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    tty: true
+    ports:
+      - "21093:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: idn0127fhadfhUd76a
+      MYSQL_DATABASE: guestbook
+    networks:
+      - app-network
+
+
+# Networks
+networks:
+  app-network:
+    driver: bridge
