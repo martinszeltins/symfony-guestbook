@@ -3,5 +3,13 @@
 {% block title %}Hello ConferenceController!{% endblock %}
 
 {% block body %}
-    <img src="{{ asset('img/website-under-construction-image-6.gif') }}">
+    All conferences:
+
+    {% for conference in conferences %}
+        <h4>{{ conference }}</h4>
+
+        <p>
+            <a href="{{ path('conference', { id: conference.id }) }}">View</a>
+        </p>
+    {% endfor %}
 {% endblock %}
